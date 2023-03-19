@@ -1,11 +1,11 @@
 
 // values 
-#define MS5607_id 0b1110111 //111011Cx // check as this is determined by the CSB pin
+#define MS5607_id 0b1110111 //111011Cx // check as this is determined by the CSB pin (CBS 0)
 #define MS5607_BAUD 112800
 #define MS5607_PORT i2c0 // check
 
 // pins
-#define MS5607_SDA 8
+#define MS5607_SDA 8    // i2c0 of OBC
 #define MS5607_SCL 9
 
 // commands
@@ -24,9 +24,16 @@
 
 
 // functions 
+// initilization
 void ms5607_init();
+
+// reset required before anything
 void ms5607_reset();
+
+// reads factory set calibration values
 void ms5607_prom_read();
+
+// converts values to real temp/pressure
 void ms5607_convert();
 void ms5607_D1_conversion();
 void ms5607_D2_conversion();

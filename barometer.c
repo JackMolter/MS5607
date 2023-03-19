@@ -1,8 +1,10 @@
+// Code for the MS5607 breakout board, attached to the OBC
 #include "pico/stdlib.h"
 #include <stdio.h>
-#include "hardware/i2c.h"
-#include "barometer.h"
 #include "math.h"
+#include "hardware/i2c.h"
+
+#include "barometer.h"
 
 static int addr = MS5607_id;
 // Variables
@@ -16,8 +18,7 @@ void ms5607_init() {
     i2c_init(MS5607_PORT, MS5607_BAUD);
     gpio_set_function(MS5607_SDA, GPIO_FUNC_I2C);
     gpio_set_function(MS5607_SCL, GPIO_FUNC_I2C);
-    //gpio_pull_up(MS5607_SDA);
-    //gpio_pull_up(MS5607_SCL);
+
 
 
 }
@@ -44,11 +45,11 @@ void ms5607_prom_read() { // return 128 bit
         i2c_write_blocking(MS5607_PORT, addr, &pom[i], 1, true);
         i2c_read_blocking(MS5607_PORT, addr, data, 2, false);
         callibration_values[i] = ((uint16_t)data[0] << 8) | data[1];    // bit wise operation to combine 2 8 bit into 1 16 bit
-        printf("Cal= %u\n", callibration_values[i]);
+        //printf("Cal= %u\n", callibration_values[i]);
         sleep_ms(2);
     }
     C1 = callibration_values[0]; // Presure sensitivity
-    C2 = callibration_values[1]; // pressure offset
+    C2 = callibration_values[1]; // Pressure offset
     C3 = callibration_values[2]; // Temperature coefficient of pressure sensitivity
     C4 = callibration_values[3]; // Temperature coefficient of pressure offset
     C5 = callibration_values[4]; // Reference temperature
@@ -57,13 +58,13 @@ void ms5607_prom_read() { // return 128 bit
 }
 void ms5607_D1_conversion(){
     uint8_t init = MS5607_CONVERT_D1; //uncompensated pressure
-    uint8_t cmd = MS5607_CMD_ADC_READ;
+    uint8_t cmd = MS5607_CMD_ADC_READ;  // analog to digital read
     uint8_t data[3];  
     i2c_write_blocking(MS5607_PORT, addr, &init, 1, true);
-    sleep_ms(10);
+    sleep_ms(10);       // minimum amount of sleep for highest precision level
     i2c_write_blocking(MS5607_PORT, addr, &cmd, 1, true);
-    i2c_read_blocking(MS5607_PORT, addr, data, 3, false);
-    //D1 = (uint32_t) data[0] + (uint32_t) data[1] + (uint32_t) data[2];
+    i2c_read_blocking(MS5607_PORT, addr, data, 3, false);   // read the pressure values
+
     D1 = ((uint32_t)data[0] << 16) | (data[1] << 8) | data[2];
 }
 
@@ -74,14 +75,12 @@ void ms5607_D2_conversion(){
     i2c_write_blocking(MS5607_PORT, addr, &init, 1, true);
     sleep_ms(10);
     i2c_write_blocking(MS5607_PORT, addr, &cmd, 1, true);
-    i2c_read_blocking(MS5607_PORT, addr, data, 3, false);
+    i2c_read_blocking(MS5607_PORT, addr, data, 3, false);   // read the temperature values
+
     D2 = ((uint32_t)data[0] << 16) | (data[1] << 8) | data[2];
     //printf("D2= %d\n", D2);
 }
 void ms5607_convert() {
-    //Temp Calculations
-    //dT = (int32_t)D2 - ((int32_t)C5*2^8);
-    //TEMP = 2000 + dT*((int32_t)C6)/2^23;
     dT = D2 - (C5* pow(2,8));
     TEMP = 2000 + dT * (C6/ pow(2,23));
     printf("DT= %d\n", dT);
@@ -90,13 +89,11 @@ void ms5607_convert() {
     //Compensated temp calcululations
     OFF = C2*pow(2,17) + (C4*dT)/ pow(2,6);
     SENS = C1 * pow(2,16) + ((C3 * dT)/ pow(2,7));
-
-    //P = D1 * (SENS/pow(2,31) - OFF)/ pow(2,15);
     //printf("OFF= %lld\n", OFF);
-    //printf("D1= %u\n", D1);
     //printf("SENS= %lld\n", SENS);
+
     P = ((((int64_t) D1 * SENS) >> 21) - OFF) >> 15;
-    printf("Temperature: %d Pressure: %d \n",TEMP,P);
+    //printf("Temperature: %d Pressure: %d \n",TEMP,P);
 
 }
 /*
@@ -129,14 +126,9 @@ void main() {
     ms5607_init();
     ms5607_reset();
     sleep_ms(5);
-    ms5607_prom_read();
+    ms5607_prom_read(); // reset must occur before prom read, prom read values do not change 
     
     while(1) {
-        //ms5607_reset();
-        /*
-        i2c_write_blocking(MS5607_PORT,addr,0b11111100,1,false);
-        sleep_ms(1000);
-        */
         sleep_ms(500);
         ms5607_D1_conversion();
         ms5607_D2_conversion();
