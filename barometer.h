@@ -1,5 +1,6 @@
+
 // values 
-#define MS5607_id 0b1110111 // check as this is determined by the CSB pin 
+#define MS5607_id 0b1110111 //111011Cx // check as this is determined by the CSB pin
 #define MS5607_BAUD 112800
 #define MS5607_PORT i2c0 // check
 
@@ -8,15 +9,24 @@
 #define MS5607_SCL 9
 
 // commands
-#define MS5607_RESET 0b00011110
-#define MS5607_PROM 0b10100110
-
-#define MS5607_CONVERT 0b01001000
-#define MS5607_ADC 0b00000000
+#define MS5607_CONVERT_D1 0b01001000
+#define MS5607_CONVERT_D2 0x58
+#define MS5607_CMD_RESET 0b00011110
+#define MS5607_CMD_ADC_READ 0x00
+#define MS5607_CMD_PROM_READ_DATA 0b10100000    // contains factory data
+#define MS5607_CMD_PROM_READ_C1 0b10100010      // calibration coef values range from 0 - 65535
+#define MS5607_CMD_PROM_READ_C2 0b10100100      // calibration coef
+#define MS5607_CMD_PROM_READ_C3 0b10100110      // calibration coef
+#define MS5607_CMD_PROM_READ_C4 0b10101000  
+#define MS5607_CMD_PROM_READ_C5 0b10101010
+#define MS5607_CMD_PROM_READ_C6 0b10101100
+#define MS5607_CMD_PROM_READ_CRC 0b10101110      // crc
 
 
 // functions 
 void ms5607_init();
 void ms5607_reset();
 void ms5607_prom_read();
-void ms5607_conversion();
+void ms5607_convert();
+void ms5607_D1_conversion();
+void ms5607_D2_conversion();
